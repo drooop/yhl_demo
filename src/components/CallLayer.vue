@@ -88,15 +88,6 @@ onMounted(() => {
   callStore.call?.on("feeds_changed", attachStreams);
 });
 
-watch(
-  () => callStore.call,
-  (c, prev) => {
-    prev?.off("feeds_changed", attachStreams);
-    c?.on("feeds_changed", attachStreams);
-    if (callStore.state === "connected") attachStreams();
-  }
-);
-
 const title = computed(() =>
   callStore.state === "outgoing"
     ? "等待对方接听…"
