@@ -64,7 +64,7 @@ export async function loginHomeserver({ baseUrl, user, password }) {
   });
 
   setupClient(client);
-  client.startClient({ initialSyncLimit: 20 });
+  client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
 
   // 写入 Pinia
   useSessionStore().setClient(client);
@@ -103,10 +103,9 @@ export async function sendContent(roomId, file) {
   const { client } = useSessionStore();
 
   // 上传得到 mxc:// URL
-  const mxc = await client.uploadContent(file, {
+  const { content_uri: mxc } = await client.uploadContent(file, {
     name: file.name,
     type: file.type,
-    rawResponse: false,
   });
 
   const isImage = file.type.startsWith("image");
