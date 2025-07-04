@@ -41,12 +41,26 @@ const mxcUrl = computed(() =>
 );
 const prettySize = (content.info?.size / 1024).toFixed(1) + " KB";
 
-function download() {
-  const url = session.client.mxcUrlToHttp(content.url);
+async function download() {
+  const url = session.client.mxcUrlToHttp(
+    content.url,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    true
+  );
+  const resp = await fetch(url, {
+    headers: { Authorization: "Bearer " + session.client.getAccessToken() },
+  });
+  if (!resp.ok) return;
+  const blob = await resp.blob();
   const a = document.createElement("a");
-  a.href = url;
+  a.href = URL.createObjectURL(blob);
   a.download = content.body;
   a.click();
+  URL.revokeObjectURL(a.href);
 }
 </script>
 

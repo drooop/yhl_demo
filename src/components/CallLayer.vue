@@ -90,9 +90,10 @@ onMounted(() => {
 
 watch(
   () => callStore.call,
-  (c) => {
+  (c, prev) => {
+    prev?.off("feeds_changed", attachStreams);
     c?.on("feeds_changed", attachStreams);
-    attachStreams();
+    if (callStore.state === "connected") attachStreams();
   }
 );
 
