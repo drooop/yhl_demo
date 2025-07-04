@@ -42,8 +42,7 @@ const mxcUrl = computed(() =>
 const prettySize = (content.info?.size / 1024).toFixed(1) + " KB";
 
 function download() {
-  // const url = session.client.mxcUrlToHttp(content.url);
-  const url = sdk.getHttpUriForMxc(session.client.baseUrl, content.url);
+  const url = session.client.mxcUrlToHttp(content.url);
   const a = document.createElement("a");
   a.href = url;
   a.download = content.body;

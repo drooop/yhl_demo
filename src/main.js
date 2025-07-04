@@ -22,7 +22,7 @@ app.use(router);
 if (baseUrl && accessToken && userId) {
   const client = sdk.createClient({ baseUrl, accessToken, userId, deviceId });
   setupClient(client); // ← 同一监听
-  client.startClient({ initialSyncLimit: 20 });
+  client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
 
   useSessionStore().setClient(client);
 }
