@@ -63,6 +63,9 @@ export async function loginHomeserver({ baseUrl, user, password }) {
     deviceId: res.device_id,
   });
 
+  // --- initialize rust crypto for end-to-end encryption ---
+  await client.initRustCrypto();
+
   setupClient(client);
   client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
 
