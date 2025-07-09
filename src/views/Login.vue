@@ -22,8 +22,10 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { loginHomeserver } from "../api/matrix";
 
-const hs = ref("https://nsynapse.lexon.tq.i3s.io"); // 示例
-const user = ref("@drop:nr.lexon.tq.i3s.io");
+// const hs = ref("https://nsynapse.lexon.tq.i3s.io"); // 示例
+// const user = ref("@drop:nr.lexon.tq.i3s.io");
+const hs = ref("https://synapse.m2m.yhlcps.com");
+const user = ref("@drop:m2m.yhlcps.com");
 const pwd = ref("TQcps@123_");
 const rt = useRouter();
 
