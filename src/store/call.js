@@ -13,7 +13,7 @@ export const useCallStore = defineStore("call", {
     },
     start(parentNode) {
       if (!this.roomName) return;
-      const domain = "meet.jit.si";
+      const domain = "meeting.yhlcps.com";
       this.api = new window.JitsiMeetExternalAPI(domain, {
         roomName: this.roomName,
         parentNode,
