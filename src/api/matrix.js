@@ -6,6 +6,21 @@ import { useSessionStore } from "../store/session";
 import { useRoomStore } from "../store/rooms";
 import { useCallStore } from "../store/call";
 
+import { RECOVERY_PHRASE, decodeRecoveryPhrase } from "./recovery";
+// fallback for incorrect wasm MIME types
+if (WebAssembly && WebAssembly.instantiateStreaming) {
+  const orig = WebAssembly.instantiateStreaming;
+  WebAssembly.instantiateStreaming = async (src, importObject) => {
+    try {
+      return await orig(src, importObject);
+    } catch (e) {
+      const resp = await src;
+      const bytes = await resp.arrayBuffer();
+      return await WebAssembly.instantiate(bytes, importObject);
+    }
+  };
+}
+
 /**
  * 给 MatrixClient 绑定统一事件监听：
  *   ─ 同步完成后刷新房间列表
@@ -35,6 +50,7 @@ export function setupClient(client) {
     call.on("state", () => callStore.updateState(call.state));
     // 音视频流变化
     call.on("feeds_changed", () => rooms.ping());
+    call.on("hangup", () => callStore.$reset());
   });
 }
 
@@ -61,7 +77,24 @@ export async function loginHomeserver({ baseUrl, user, password }) {
     accessToken: res.access_token,
     userId: res.user_id,
     deviceId: res.device_id,
+    cryptoCallbacks: {
+      // 使用固定助记词自动解锁密钥库，正式环境应改为交互式输入
+      getSecretStorageKey: async ({ keys }) => {
+        const keyId = Object.keys(keys)[0];
+        return [keyId, decodeRecoveryPhrase()];
+      },
+    },
   });
+
+  // --- initialize rust crypto for end-to-end encryption ---
+  await client.initRustCrypto();
+  await ensureEncryptionSetup(client);
+  // 请求主设备确认以完成信任验证
+  try {
+    await client.getCrypto().requestOwnUserVerification();
+  } catch {
+    /* ignore */
+  }
 
   setupClient(client);
   client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
@@ -143,6 +176,7 @@ export async function placeVideoCall(roomId) {
   // 状态监听
   call.on("state", () => callStore.updateState(call.state));
   call.on("feeds_changed", () => rooms.ping());
+  call.on("hangup", () => callStore.$reset());
 
   await call.placeVideoCall();
 }
@@ -161,4 +195,32 @@ export async function logout() {
   ["baseUrl", "userId", "accessToken", "deviceId"].forEach((k) =>
     localStorage.removeItem(k)
   );
+}
+
+/* -------------------------------------------------------
+ * 加密辅助：初始化密钥和交叉签名
+ * ----------------------------------------------------- */
+export async function ensureEncryptionSetup(client) {
+  const crypto = client.getCrypto();
+  await crypto.bootstrapSecretStorage({
+    // 自动创建密钥库，使用上方常量作为恢复短语
+    createSecretStorageKey: async () => {
+      return crypto.createRecoveryKeyFromPassphrase(RECOVERY_PHRASE);
+    },
+  });
+
+  await crypto.bootstrapCrossSigning({
+    authUploadDeviceSigningKeys: async (makeRequest) => makeRequest({}),
+  });
+
+  const hasBackup = (await crypto.checkKeyBackupAndEnable()) !== null;
+  if (!hasBackup) await crypto.resetKeyBackup();
+}
+
+/* -------------------------------------------------------
+ * 向主设备发送验证请求
+ * ----------------------------------------------------- */
+export function requestVerificationFromMobile() {
+  const { client } = useSessionStore();
+  return client.getCrypto().requestOwnUserVerification();
 }
