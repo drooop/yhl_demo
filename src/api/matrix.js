@@ -40,7 +40,6 @@ export function loadCryptoWasm() {
  */
 export function setupClient(client) {
   const rooms = useRoomStore();
-  const callStore = useCallStore();
 
   // 1) 同步完成
   client.on("sync", (state) => {
@@ -52,17 +51,7 @@ export function setupClient(client) {
     if (room.roomId === rooms.currentRoomId) rooms.ping(); // 触发布局刷新
   });
 
-  // 3) 来电
-  client.on("Call.incoming", (call) => {
-    callStore.setCall(call);
-    callStore.updateState("incoming");
-
-    // 状态流转
-    call.on("state", () => callStore.updateState(call.state));
-    // 音视频流变化
-    call.on("feeds_changed", () => rooms.ping());
-    call.on("hangup", () => callStore.$reset());
-  });
+  // 3) 来电 - 已弃用（使用 Jitsi 实现）
 }
 
 /* -------------------------------------------------------
@@ -201,20 +190,17 @@ export async function sendContent(roomId, file) {
 export async function placeVideoCall(roomId) {
   const session = useSessionStore();
   const callStore = useCallStore();
-  const rooms = useRoomStore();
 
   if (!session.client) throw new Error("Matrix client not ready");
 
-  const call = session.client.createCall(roomId);
-  callStore.setCall(call);
-  callStore.updateState("outgoing");
+  const roomName =
+    "matrix" + roomId.replace(/[^a-zA-Z0-9]/g, "") + Date.now();
+  const link = `https://meet.jit.si/${roomName}`;
 
-  // 状态监听
-  call.on("state", () => callStore.updateState(call.state));
-  call.on("feeds_changed", () => rooms.ping());
-  call.on("hangup", () => callStore.$reset());
+  // send invite link to room
+  await sendText(roomId, `Join video call: ${link}`);
 
-  await call.placeVideoCall();
+  callStore.prepare(roomName);
 }
 
 /* -------------------------------------------------------
