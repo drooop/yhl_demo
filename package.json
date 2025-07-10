@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
+    "@matrix-org/matrix-sdk-crypto-wasm": "^15.0.0",
     "element-plus": "^2.10.2",
     "matrix-js-sdk": "^37.9.0",
     "pinia": "^3.0.3",
