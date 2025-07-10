@@ -6,6 +6,21 @@ import { useSessionStore } from "../store/session";
 import { useRoomStore } from "../store/rooms";
 import { useCallStore } from "../store/call";
 
+import { decodeRecoveryKey } from "matrix-js-sdk/lib/crypto-api/recovery-key";
+// fallback for incorrect wasm MIME types
+if (WebAssembly && WebAssembly.instantiateStreaming) {
+  const orig = WebAssembly.instantiateStreaming;
+  WebAssembly.instantiateStreaming = async (src, importObject) => {
+    try {
+      return await orig(src, importObject);
+    } catch (e) {
+      const resp = await src;
+      const bytes = await resp.arrayBuffer();
+      return await WebAssembly.instantiate(bytes, importObject);
+    }
+  };
+}
+
 /**
  * 给 MatrixClient 绑定统一事件监听：
  *   ─ 同步完成后刷新房间列表
@@ -61,10 +76,19 @@ export async function loginHomeserver({ baseUrl, user, password }) {
     accessToken: res.access_token,
     userId: res.user_id,
     deviceId: res.device_id,
+    cryptoCallbacks: {
+      getSecretStorageKey: async ({ keys }) => {
+        const key = prompt("输入恢复密钥以解锁密钥库");
+        if (!key) return null;
+        const keyId = Object.keys(keys)[0];
+        return [keyId, decodeRecoveryKey(key)];
+      },
+    },
   });
 
   // --- initialize rust crypto for end-to-end encryption ---
   await client.initRustCrypto();
+  await ensureEncryptionSetup(client);
 
   setupClient(client);
   client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
@@ -164,4 +188,32 @@ export async function logout() {
   ["baseUrl", "userId", "accessToken", "deviceId"].forEach((k) =>
     localStorage.removeItem(k)
   );
+}
+
+/* -------------------------------------------------------
+ * 加密辅助：初始化密钥和交叉签名
+ * ----------------------------------------------------- */
+export async function ensureEncryptionSetup(client) {
+  const crypto = client.getCrypto();
+  await crypto.bootstrapSecretStorage({
+    createSecretStorageKey: async () => {
+      const pass = prompt('请输入新的恢复密钥短语（留空则随机生成）');
+      return crypto.createRecoveryKeyFromPassphrase(pass || undefined);
+    },
+  });
+
+  await crypto.bootstrapCrossSigning({
+    authUploadDeviceSigningKeys: async (makeRequest) => makeRequest({}),
+  });
+
+  const hasBackup = (await crypto.checkKeyBackupAndEnable()) !== null;
+  if (!hasBackup) await crypto.resetKeyBackup();
+}
+
+/* -------------------------------------------------------
+ * 向主设备发送验证请求
+ * ----------------------------------------------------- */
+export function requestVerificationFromMobile() {
+  const { client } = useSessionStore();
+  return client.getCrypto().requestOwnUserVerification();
 }
