@@ -8,6 +8,7 @@ import { useRoomStore } from "../store/rooms";
 import { useCallStore } from "../store/call";
 
 import { RECOVERY_PHRASE, decodeRecoveryPhrase } from "./recovery";
+
 // fallback for incorrect wasm MIME types
 if (WebAssembly && WebAssembly.instantiateStreaming) {
   const orig = WebAssembly.instantiateStreaming;
@@ -71,8 +72,6 @@ export function setupClient(client) {
 export async function loginHomeserver({ baseUrl, user, password }) {
   // 临时 client 只用于 /login
   const tmp = sdk.createClient({ baseUrl });
-  // const { flows } = await tmp.loginFlows()
-  
   const res = await tmp.login("m.login.password", {
     identifier: {
       type: "m.id.user",
@@ -81,12 +80,23 @@ export async function loginHomeserver({ baseUrl, user, password }) {
     password,
   });
 
+  // 获取本地存储中的设备 ID，确保与当前设备一致
+  let storedDeviceId = localStorage.getItem("deviceId");
+  console.log(`Stored deviceId: ${storedDeviceId}`);
+
+  // 如果没有存储的 deviceId，使用从登录响应中获得的 deviceId
+  if (!storedDeviceId) {
+    storedDeviceId = res.device_id;
+    console.log(`Setting deviceId to: ${storedDeviceId}`);
+    localStorage.setItem("deviceId", storedDeviceId); // 将 deviceId 存储到 localStorage
+  }
+
   // 正式 client：必须带 deviceId，否则不能建立通话
   const client = sdk.createClient({
     baseUrl,
     accessToken: res.access_token,
     userId: res.user_id,
-    deviceId: res.device_id,
+    deviceId: storedDeviceId,  // 使用存储的设备 ID
     cryptoCallbacks: {
       // 使用固定助记词自动解锁密钥库，正式环境应改为交互式输入
       getSecretStorageKey: async ({ keys }) => {
@@ -100,8 +110,9 @@ export async function loginHomeserver({ baseUrl, user, password }) {
   await loadCryptoWasm();
   await client.initRustCrypto();
   await ensureEncryptionSetup(client);
-  // 请求主设备确认以完成信任验证
+
   try {
+    // 请求主设备确认以完成信任验证
     await client.getCrypto().requestOwnUserVerification();
   } catch {
     /* ignore */
@@ -117,11 +128,25 @@ export async function loginHomeserver({ baseUrl, user, password }) {
   localStorage.setItem("baseUrl", baseUrl);
   localStorage.setItem("userId", res.user_id);
   localStorage.setItem("accessToken", res.access_token);
-  localStorage.setItem("deviceId", res.device_id);
-
-  // client.createCall().placeVideoCall()
 
   return client;
+}
+
+
+/* -------------------------------------------------------
+ * 登出：清 Pinia + localStorage
+ * ----------------------------------------------------- */
+export async function logout() {
+  const session = useSessionStore();
+  try {
+    await session.client?.logout();
+  } catch {
+    /* ignore */
+  }
+  session.$reset();
+  ["baseUrl", "userId", "accessToken", "deviceId"].forEach((k) =>
+    localStorage.removeItem(k)
+  );
 }
 
 /* -------------------------------------------------------
@@ -190,22 +215,6 @@ export async function placeVideoCall(roomId) {
   call.on("hangup", () => callStore.$reset());
 
   await call.placeVideoCall();
-}
-
-/* -------------------------------------------------------
- * 登出：清 Pinia + localStorage
- * ----------------------------------------------------- */
-export async function logout() {
-  const session = useSessionStore();
-  try {
-    await session.client?.logout();
-  } catch {
-    /* ignore */
-  }
-  session.$reset();
-  ["baseUrl", "userId", "accessToken", "deviceId"].forEach((k) =>
-    localStorage.removeItem(k)
-  );
 }
 
 /* -------------------------------------------------------

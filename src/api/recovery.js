@@ -1,8 +1,7 @@
 import { decodeRecoveryKey } from "matrix-js-sdk/lib/crypto-api/recovery-key";
 
-// 固定助记词（仅供测试）
 export const RECOVERY_PHRASE =
-  "EsUG BNSP HxK6 SM9j EHPk SsSE UW4r 238h Bz97 rtJ3 RfGZ JUb2";
+  "EsTw wGmL ahjT Es63 pDa1 MuuE Dph6 SK4D ZeFX K7ah Nu64 MiPZ"; // @bot:m2m.yhlcps.com 的恢复短语
 
 export function decodeRecoveryPhrase() {
   return decodeRecoveryKey(RECOVERY_PHRASE);
