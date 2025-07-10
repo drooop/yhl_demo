@@ -7,6 +7,10 @@ import { useRoomStore } from "../store/rooms";
 import { useCallStore } from "../store/call";
 
 import { decodeRecoveryKey } from "matrix-js-sdk/lib/crypto-api/recovery-key";
+
+// 测试用助记词（不应在生产环境使用）
+const RECOVERY_PHRASE =
+  "EsUG BNSP HxK6 SM9j EHPk SsSE UW4r 238h Bz97 rtJ3 RfGZ JUb2";
 // fallback for incorrect wasm MIME types
 if (WebAssembly && WebAssembly.instantiateStreaming) {
   const orig = WebAssembly.instantiateStreaming;
@@ -77,11 +81,10 @@ export async function loginHomeserver({ baseUrl, user, password }) {
     userId: res.user_id,
     deviceId: res.device_id,
     cryptoCallbacks: {
+      // 使用固定助记词自动解锁密钥库，正式环境应改为交互式输入
       getSecretStorageKey: async ({ keys }) => {
-        const key = prompt("输入恢复密钥以解锁密钥库");
-        if (!key) return null;
         const keyId = Object.keys(keys)[0];
-        return [keyId, decodeRecoveryKey(key)];
+        return [keyId, decodeRecoveryKey(RECOVERY_PHRASE)];
       },
     },
   });
@@ -196,9 +199,9 @@ export async function logout() {
 export async function ensureEncryptionSetup(client) {
   const crypto = client.getCrypto();
   await crypto.bootstrapSecretStorage({
+    // 自动创建密钥库，使用上方常量作为恢复短语
     createSecretStorageKey: async () => {
-      const pass = prompt('请输入新的恢复密钥短语（留空则随机生成）');
-      return crypto.createRecoveryKeyFromPassphrase(pass || undefined);
+      return crypto.createRecoveryKeyFromPassphrase(RECOVERY_PHRASE);
     },
   });
 
