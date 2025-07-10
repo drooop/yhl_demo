@@ -6,11 +6,7 @@ import { useSessionStore } from "../store/session";
 import { useRoomStore } from "../store/rooms";
 import { useCallStore } from "../store/call";
 
-import { decodeRecoveryKey } from "matrix-js-sdk/lib/crypto-api/recovery-key";
-
-// 测试用助记词（不应在生产环境使用）
-const RECOVERY_PHRASE =
-  "EsUG BNSP HxK6 SM9j EHPk SsSE UW4r 238h Bz97 rtJ3 RfGZ JUb2";
+import { RECOVERY_PHRASE, decodeRecoveryPhrase } from "./recovery";
 // fallback for incorrect wasm MIME types
 if (WebAssembly && WebAssembly.instantiateStreaming) {
   const orig = WebAssembly.instantiateStreaming;
@@ -54,6 +50,7 @@ export function setupClient(client) {
     call.on("state", () => callStore.updateState(call.state));
     // 音视频流变化
     call.on("feeds_changed", () => rooms.ping());
+    call.on("hangup", () => callStore.$reset());
   });
 }
 
@@ -84,7 +81,7 @@ export async function loginHomeserver({ baseUrl, user, password }) {
       // 使用固定助记词自动解锁密钥库，正式环境应改为交互式输入
       getSecretStorageKey: async ({ keys }) => {
         const keyId = Object.keys(keys)[0];
-        return [keyId, decodeRecoveryKey(RECOVERY_PHRASE)];
+        return [keyId, decodeRecoveryPhrase()];
       },
     },
   });
@@ -92,6 +89,12 @@ export async function loginHomeserver({ baseUrl, user, password }) {
   // --- initialize rust crypto for end-to-end encryption ---
   await client.initRustCrypto();
   await ensureEncryptionSetup(client);
+  // 请求主设备确认以完成信任验证
+  try {
+    await client.getCrypto().requestOwnUserVerification();
+  } catch {
+    /* ignore */
+  }
 
   setupClient(client);
   client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
@@ -173,6 +176,7 @@ export async function placeVideoCall(roomId) {
   // 状态监听
   call.on("state", () => callStore.updateState(call.state));
   call.on("feeds_changed", () => rooms.ping());
+  call.on("hangup", () => callStore.$reset());
 
   await call.placeVideoCall();
 }

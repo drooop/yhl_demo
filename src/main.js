@@ -6,11 +6,7 @@ import router from "./router";
 import App from "./App.vue";
 import * as sdk from "matrix-js-sdk";
 import { setupClient, ensureEncryptionSetup } from "./api/matrix";
-import { decodeRecoveryKey } from "matrix-js-sdk/lib/crypto-api/recovery-key";
-
-// 与 api/matrix.js 中保持一致的测试助记词
-const RECOVERY_PHRASE =
-  "EsUG BNSP HxK6 SM9j EHPk SsSE UW4r 238h Bz97 rtJ3 RfGZ JUb2";
+import { decodeRecoveryPhrase } from "./api/recovery";
 import { useSessionStore } from "./store/session";
 
 // -------- 自动恢复 Matrix 会话 ----------
@@ -34,7 +30,7 @@ if (baseUrl && accessToken && userId) {
       // 测试环境中直接使用固定助记词解锁密钥库
       getSecretStorageKey: async ({ keys }) => {
         const keyId = Object.keys(keys)[0];
-        return [keyId, decodeRecoveryKey(RECOVERY_PHRASE)];
+        return [keyId, decodeRecoveryPhrase()];
       },
     },
   });
