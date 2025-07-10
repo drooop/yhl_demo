@@ -1,28 +1,35 @@
 import { defineStore } from "pinia";
+
 export const useCallStore = defineStore("call", {
   state: () => ({
-    call: null, // MatrixCall 实例
-    state: "idle", // idle | outgoing | incoming | connected
-    muted: false,
-    videoOff: false,
+    api: null, // JitsiMeetExternalAPI instance
+    state: "idle", // idle | pending | connected
+    roomName: "",
   }),
   actions: {
-    setCall(c) {
-      this.call = c;
+    prepare(roomName) {
+      this.roomName = roomName;
+      this.state = "pending";
     },
-    updateState(s) {
-      this.state = s;
+    start(parentNode) {
+      if (!this.roomName) return;
+      const domain = "meet.jit.si";
+      this.api = new window.JitsiMeetExternalAPI(domain, {
+        roomName: this.roomName,
+        parentNode,
+      });
+      this.api.addEventListener("readyToClose", () => this.hangup());
+      this.state = "connected";
     },
     toggleMute() {
-      this.muted = !this.muted;
-      this.call?.setMicrophoneMuted(this.muted);
+      this.api?.executeCommand("toggleAudio");
     },
     toggleVideo() {
-      this.videoOff = !this.videoOff;
-      this.call?.setLocalVideoMuted(this.videoOff);
+      this.api?.executeCommand("toggleVideo");
     },
     hangup() {
-      this.call?.hangup();
+      this.api?.executeCommand("hangup");
+      this.api?.dispose();
       this.$reset();
     },
   },
