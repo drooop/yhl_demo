@@ -9,6 +9,9 @@ import { useCallStore } from "../store/call";
 
 import { RECOVERY_PHRASE, decodeRecoveryPhrase } from "./recovery";
 
+// 配置标志：是否启用加密
+const useEncryption = false;  // 将其设置为 false 来跳过加密模块
+
 // fallback for incorrect wasm MIME types
 if (WebAssembly && WebAssembly.instantiateStreaming) {
   const orig = WebAssembly.instantiateStreaming;
@@ -26,7 +29,7 @@ if (WebAssembly && WebAssembly.instantiateStreaming) {
 // load the crypto wasm module from the public folder
 let wasmInit;
 export function loadCryptoWasm() {
-  if (!wasmInit) {
+  if (!wasmInit && useEncryption) {
     wasmInit = RustCrypto.initAsync("/matrix_sdk_crypto_bg.wasm");
   }
   return wasmInit;
@@ -106,16 +109,11 @@ export async function loginHomeserver({ baseUrl, user, password }) {
     },
   });
 
-  // --- initialize rust crypto for end-to-end encryption ---
-  await loadCryptoWasm();
-  await client.initRustCrypto();
-  await ensureEncryptionSetup(client);
-
-  try {
-    // 请求主设备确认以完成信任验证
-    await client.getCrypto().requestOwnUserVerification();
-  } catch {
-    /* ignore */
+  // --- 初始化 Rust 加密模块，仅当启用加密时调用 ---
+  if (useEncryption) {
+    await loadCryptoWasm();
+    await client.initRustCrypto();
+    await ensureEncryptionSetup(client);
   }
 
   setupClient(client);
@@ -221,6 +219,8 @@ export async function placeVideoCall(roomId) {
  * 加密辅助：初始化密钥和交叉签名
  * ----------------------------------------------------- */
 export async function ensureEncryptionSetup(client) {
+  if (!useEncryption) return;  // 如果没有启用加密，跳过
+
   const crypto = client.getCrypto();
   await crypto.bootstrapSecretStorage({
     // 自动创建密钥库，使用上方常量作为恢复短语
