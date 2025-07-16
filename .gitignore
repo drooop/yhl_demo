@@ -27,4 +27,7 @@ dist-ssr
 # Matrix crypto WASM
 public/matrix_sdk_crypto_bg.wasm
 src/assets/matrix_sdk_crypto_bg.wasm
+static/
+web/
+
 

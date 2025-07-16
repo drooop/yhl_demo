@@ -12,7 +12,7 @@ export default defineConfig({
   ],
   base: 'http://127.0.0.1:8000/', 
   build: {
-    outDir: 'static',
+    outDir: 'static',               // 与 python 代码同级
     assetsDir: 'assets'
   },
   assetsInclude: ["**/*.wasm"],

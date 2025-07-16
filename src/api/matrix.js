@@ -16,7 +16,8 @@ export let useEncryption = true;  // 设置为 false 跳过加密初始化
 let wasmInit;
 export function loadCryptoWasm() {
   if (!wasmInit && useEncryption) {
-    wasmInit = RustCrypto.initAsync("/matrix_sdk_crypto_bg.wasm");
+    // wasmInit = RustCrypto.initAsync("/matrix_sdk_crypto_bg.wasm");
+    wasmInit = RustCrypto.initAsync("http://localhost:8000/assets/matrix_sdk_crypto_bg.wasm");
   }
   return wasmInit;
 }
