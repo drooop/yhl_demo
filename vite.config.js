@@ -20,6 +20,8 @@ export default defineConfig({
   assetsInclude: ["**/*.wasm"],
   resolve: {
     conditions: ["wasm"],
+    dedupe: ["matrix-js-sdk"],
   },
+  optimizeDeps: { include: ["matrix-js-sdk"] },
   server: { https: true },
 });

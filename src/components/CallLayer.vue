@@ -24,9 +24,12 @@
 <script setup>
 import { ref, watch, nextTick } from 'vue';
 import { Phone, Microphone, VideoCamera } from '@element-plus/icons-vue';
+import { ElMessageBox } from 'element-plus';
 import { useCallStore } from '../store/call';
+import { useSessionStore } from '../store/session';
 
 const callStore = useCallStore();
+const session = useSessionStore();
 const visible = ref(false);
 const container = ref(null);
 
@@ -35,8 +38,19 @@ watch(
   async (s) => {
     visible.value = s !== 'idle';
     if (s === 'pending') {
+      if (callStore.incoming) {
+        try {
+          await ElMessageBox.confirm('是否接听来电?', '视频通话', {
+            confirmButtonText: '接听',
+            cancelButtonText: '拒绝',
+          });
+        } catch {
+          callStore.hangup();
+          return;
+        }
+      }
       await nextTick();
-      callStore.start(container.value);
+      callStore.start(container.value, session.userId);
     }
   }
 );

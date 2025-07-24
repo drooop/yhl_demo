@@ -5,18 +5,23 @@ export const useCallStore = defineStore("call", {
     api: null, // JitsiMeetExternalAPI instance
     state: "idle", // idle | pending | connected
     roomName: "",
+    callId: "",
+    incoming: false,
   }),
   actions: {
-    prepare(roomName) {
+    prepare(roomName, incoming = false, callId = "") {
       this.roomName = roomName;
+      this.callId = callId;
+      this.incoming = incoming;
       this.state = "pending";
     },
-    start(parentNode) {
+    start(parentNode, displayName) {
       if (!this.roomName) return;
       const domain = "meeting.yhlcps.com";
       this.api = new window.JitsiMeetExternalAPI(domain, {
         roomName: this.roomName,
         parentNode,
+        userInfo: { displayName },
         iframeAttrs: {
           allow: "camera; microphone; fullscreen; display-capture",
         },
