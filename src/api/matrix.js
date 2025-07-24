@@ -192,10 +192,11 @@ export async function placeVideoCall(roomId) {
   const link = `https://meeting.yhlcps.com/${roomName}`;
 
   // 发送 Element 风格的通话事件，携带 Jitsi 信息
+  const callId = "jitsi-" + Date.now();
   await session.client.sendEvent(
     roomId,
     "m.call.invite",
-    { roomName, link },
+    { roomName, link, call_id: callId, version: 1 },
     ""
   );
 
