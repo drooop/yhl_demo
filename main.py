@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn, threading
+import uvicorn
+import threading
 from webui import webui
+
 
 app = FastAPI()
 
@@ -15,8 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 def run_fastapi():
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
 
 def main():
     threading.Thread(target=run_fastapi, daemon=True).start()
@@ -28,6 +32,7 @@ def main():
     win.show_browser("static/index.html", webui.Browser.AnyBrowser)
 
     webui.wait()
+
 
 if __name__ == "__main__":
     main()

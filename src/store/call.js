@@ -17,6 +17,9 @@ export const useCallStore = defineStore("call", {
       this.api = new window.JitsiMeetExternalAPI(domain, {
         roomName: this.roomName,
         parentNode,
+        iframeAttrs: {
+          allow: "camera; microphone; fullscreen; display-capture",
+        },
       });
       this.api.addEventListener("readyToClose", () => this.hangup());
       this.state = "connected";
