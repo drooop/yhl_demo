@@ -1,0 +1,46 @@
+[
+  {
+    "id": "workspace_a",
+    "label": "工作区_A",
+    "type": "workspace",
+    "children": [
+      {
+        "id": "pic_a1",
+        "label": "PIC_A1",
+        "type": "pic",
+        "children": [
+          {
+            "id": "worker_v1",
+            "label": "软件工人_v1",
+            "type": "worker",
+            "children": [
+              { "id": "model_m1", "label": "m1", "type": "model" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "workspace_b",
+    "label": "工作区_B",
+    "type": "workspace",
+    "children": [
+      {
+        "id": "pic_b1",
+        "label": "PIC_B1",
+        "type": "pic",
+        "children": [
+          {
+            "id": "worker_v1b",
+            "label": "软件工人_v1",
+            "type": "worker",
+            "children": [
+              { "id": "model_m1b", "label": "m1", "type": "model" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
