@@ -104,8 +104,9 @@ class MainPage(rio.Component):
                         rio.Column(
                             rio.Text(
                                 "云海流 - " + " - ".join(self.selected_path)
-                                if self.selected_path else "请选择节点",
-                                fill="black",
+                                if self.selected_path
+                                else "请选择节点",
+                                fill=rio.Color.from_hex("#000000"),
                             ),
                             align_x=0.5,
                             align_y=0.5,

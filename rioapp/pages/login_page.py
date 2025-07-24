@@ -28,7 +28,12 @@ class LoginPage(rio.Component):
             rio.TextInput(text=self.bind().username, label="用户名"),
             rio.TextInput(text=self.bind().password, label="密码", is_secret=True),
             rio.Button("登录", on_press=self.on_login),
-            rio.Text(self.error, fill="danger") if self.error else rio.Spacer(),
+            rio.Text(
+                self.error,
+                fill=rio.Color.from_hex("#b3261e"),
+            )
+            if self.error
+            else rio.Spacer(),
             spacing=1,
             align_x=0.5,
             align_y=0.4,
