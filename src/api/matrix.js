@@ -47,13 +47,23 @@ export function setupClient(client) {
   client.on("Room.timeline", (ev, room) => {
     if (room.roomId === rooms.currentRoomId) rooms.ping(); // 触发布局刷新
 
-    // 来电事件
+    // 来电事件: 旧版 m.call.invite
+    if (ev.getType() === "m.call.invite" && ev.getSender() !== session.userId) {
+      const { roomName, call_id, domain } = ev.getContent() || {};
+      if (roomName) callStore.prepare(roomName, true, call_id, domain);
+    }
+
+    // 来电事件: MSC3401 群组呼叫
     if (
-      ev.getType() === "m.call.invite" &&
+      ev.getType() === "org.matrix.msc3401.call.member" &&
       ev.getSender() !== session.userId
     ) {
-      const { roomName, call_id } = ev.getContent() || {};
-      if (roomName) callStore.prepare(roomName, true, call_id);
+      const focus = ev.getContent()?.foci_preferred?.[0];
+      const roomName = focus?.livekit_alias;
+      const domain = focus?.livekit_service_url
+        ? new URL(focus.livekit_service_url).hostname
+        : undefined;
+      if (roomName) callStore.prepare(roomName, true, "", domain);
     }
   });
 
@@ -189,13 +199,15 @@ export async function placeVideoCall(roomId) {
   if (!session.client) throw new Error("Matrix client not ready");
 
   const roomName = "matrix" + roomId.replace(/[^a-zA-Z0-9]/g, "") + Date.now();
-  const link = `https://meeting.yhlcps.com/${roomName}`;
+  const domain = "meeting.yhlcps.com";
+  const link = `https://${domain}/${roomName}`;
 
   // 发送 Element 风格的通话事件，携带 Jitsi 信息
   const callId = "jitsi-" + Date.now();
   const content = {
     roomName,
     link,
+    domain,
     call_id: callId,
     version: "1",
     party_id: session.client.getDeviceId(),
@@ -205,7 +217,7 @@ export async function placeVideoCall(roomId) {
   await session.client.sendEvent(roomId, "m.call.invite", content, "");
 
   // 准备通话
-  callStore.prepare(roomName, false, callId);
+  callStore.prepare(roomName, false, callId, domain);
 }
 
 /**

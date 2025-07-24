@@ -7,17 +7,19 @@ export const useCallStore = defineStore("call", {
     roomName: "",
     callId: "",
     incoming: false,
+    domain: "meeting.yhlcps.com",
   }),
   actions: {
-    prepare(roomName, incoming = false, callId = "") {
+    prepare(roomName, incoming = false, callId = "", domain = "meeting.yhlcps.com") {
       this.roomName = roomName;
       this.callId = callId;
       this.incoming = incoming;
+      this.domain = domain;
       this.state = "pending";
     },
     start(parentNode, displayName) {
       if (!this.roomName) return;
-      const domain = "meeting.yhlcps.com";
+      const domain = this.domain || "meeting.yhlcps.com";
       this.api = new window.JitsiMeetExternalAPI(domain, {
         roomName: this.roomName,
         parentNode,
