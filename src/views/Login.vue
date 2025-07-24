@@ -35,7 +35,7 @@ async function onLogin() {
     user: user.value,
     password: pwd.value,
   });
-  rt.push("/main");
+  rt.push("/");
 }
 </script>
 
