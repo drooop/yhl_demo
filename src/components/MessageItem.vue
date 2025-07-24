@@ -3,6 +3,9 @@
     <!-- 文本 -->
     <div v-if="isText" class="bubble">{{ content.body }}</div>
 
+    <!-- 通话邀请 -->
+    <div v-else-if="isCallInvite" class="bubble">[视频通话邀请]</div>
+
     <!-- 图片 -->
     <el-card v-else-if="isImage" class="card">
       <el-image :src="mxcUrl" fit="cover" style="width: 150px; height: 150px" />
@@ -34,6 +37,7 @@ const isMe = props.event.getSender() === session.userId;
 const isText = content.msgtype === "m.text";
 const failed = props.event.status === "not_sent";
 const isImage = content.msgtype === "m.image";
+const isCallInvite = props.event.getType() === "m.call.invite";
 
 const mxcUrl = computed(() =>
   // session.client.mxcUrlToHttp(content.url, 300, 300, "scale")

@@ -53,7 +53,7 @@ export function setupClient(client) {
       ev.getSender() !== session.userId
     ) {
       const { roomName } = ev.getContent() || {};
-      if (roomName) callStore.prepare(roomName);
+      if (roomName) callStore.prepare(roomName, true);
     }
   });
 
