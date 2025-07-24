@@ -29,7 +29,7 @@
           </el-breadcrumb>
         </div>
         <el-main>
-          <router-view />
+          <slot />
         </el-main>
       </el-container>
     </el-container>
@@ -38,26 +38,48 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { House, ChatDotRound, User } from '@element-plus/icons-vue'
 import TreeSidebar from '../components/TreeSidebar.vue'
 import ChatDrawer from '../components/ChatDrawer.vue'
 import { useSessionStore } from '../store/session'
 
 const router = useRouter()
+const route = useRoute()
 const session = useSessionStore()
 const chatVisible = ref(false)
-const crumbs = ref([])
+const crumbs = computed(() => {
+  const items = []
+  const ws = route.params.workspace
+  const pic = route.params.pic
+  const worker = route.params.worker
+  const model = route.params.model
+  if (ws) {
+    const wPath = `/workspace/${encodeURIComponent(ws)}`
+    items.push({ label: ws, path: wPath })
+    if (pic) {
+      const pPath = `${wPath}/pic/${encodeURIComponent(pic)}`
+      items.push({ label: pic, path: pPath })
+      if (worker) {
+        const woPath = `${pPath}/worker/${encodeURIComponent(worker)}`
+        items.push({ label: worker, path: woPath })
+        if (model) {
+          const mPath = `${woPath}/model/${encodeURIComponent(model)}`
+          items.push({ label: model, path: mPath })
+        }
+      }
+    }
+  }
+  return items
+})
 
 function onSelect(items) {
-  crumbs.value = items
   if (items.length) router.push(items[items.length - 1].path)
 }
 
 function navigate(i) {
   router.push(crumbs.value[i].path)
-  crumbs.value = crumbs.value.slice(0, i + 1)
 }
 
 function logout() {
@@ -66,7 +88,7 @@ function logout() {
 }
 
 function toSettings() {
-  router.push('/main/settings')
+  router.push('/settings')
 }
 </script>
 

@@ -30,7 +30,10 @@ function onClick(data, node) {
     n = n.parent
   }
   const items = segments.map((seg, idx) => {
-    const path = '/main' + segments.slice(0, idx + 1).map(s => `/${s.type}/${encodeURIComponent(s.label)}`).join('')
+    const path = segments
+      .slice(0, idx + 1)
+      .map(s => `/${s.type}/${encodeURIComponent(s.label)}`)
+      .join('')
     return { label: seg.label, path }
   })
   emit('select', items)
