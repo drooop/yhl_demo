@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import { createRouter, createWebHashHistory, createWebHistory } from "vue-router";
 import Login from "../views/Login.vue";
 import Root from "../views/Root.vue";
 import Workspace from "../views/Workspace.vue";
@@ -14,8 +14,8 @@ import Settings from "../views/Settings.vue";
 // });
 
 export default createRouter({
-  // history: createWebHistory(),
-  history: createWebHashHistory(),
+  history: createWebHistory(),
+  // history: createWebHashHistory(),
   routes: [
     { path: "/", component: Root },
     { path: "/login", component: Login },
