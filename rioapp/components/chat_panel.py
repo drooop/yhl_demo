@@ -36,7 +36,6 @@ class ChatPanel(rio.Component):
             rio.Column(
                 *(rio.Text(m) for m in messages),
                 grow_y=True,
-                # scroll_y="auto"
             ),
             rio.Row(
                 rio.TextInput(text=self.bind().msg, grow_x=True,
