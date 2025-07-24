@@ -36,6 +36,7 @@ export async function ensurePublicIdentity(client) {
 export function setupClient(client) {
   const rooms = useRoomStore();
   const callStore = useCallStore();
+  const session = useSessionStore();
 
   // 1) 同步完成
   client.on("sync", (state) => {
@@ -43,8 +44,17 @@ export function setupClient(client) {
   });
 
   // 2) 时间线变更
-  client.on("Room.timeline", (_ev, room) => {
+  client.on("Room.timeline", (ev, room) => {
     if (room.roomId === rooms.currentRoomId) rooms.ping(); // 触发布局刷新
+
+    // 来电事件
+    if (
+      ev.getType() === "m.call.invite" &&
+      ev.getSender() !== session.userId
+    ) {
+      const { roomName, call_id } = ev.getContent() || {};
+      if (roomName) callStore.prepare(roomName, true, call_id);
+    }
   });
 
   // 3) 来电 - 已弃用（使用 Jitsi 实现）
@@ -181,11 +191,21 @@ export async function placeVideoCall(roomId) {
   const roomName = "matrix" + roomId.replace(/[^a-zA-Z0-9]/g, "") + Date.now();
   const link = `https://meeting.yhlcps.com/${roomName}`;
 
-  // 发送 Jitsi 视频通话邀请链接到房间
-  await sendText(roomId, `Join video call: ${link}`);
+  // 发送 Element 风格的通话事件，携带 Jitsi 信息
+  const callId = "jitsi-" + Date.now();
+  const content = {
+    roomName,
+    link,
+    call_id: callId,
+    version: "1",
+    party_id: session.client.getDeviceId(),
+    lifetime: 60000,
+    offer: { sdp: "", type: "offer" },
+  };
+  await session.client.sendEvent(roomId, "m.call.invite", content, "");
 
   // 准备通话
-  callStore.prepare(roomName);
+  callStore.prepare(roomName, false, callId);
 }
 
 /**
