@@ -52,8 +52,8 @@ export function setupClient(client) {
       ev.getType() === "m.call.invite" &&
       ev.getSender() !== session.userId
     ) {
-      const { roomName } = ev.getContent() || {};
-      if (roomName) callStore.prepare(roomName, true);
+      const { roomName, call_id } = ev.getContent() || {};
+      if (roomName) callStore.prepare(roomName, true, call_id);
     }
   });
 
@@ -193,15 +193,19 @@ export async function placeVideoCall(roomId) {
 
   // 发送 Element 风格的通话事件，携带 Jitsi 信息
   const callId = "jitsi-" + Date.now();
-  await session.client.sendEvent(
-    roomId,
-    "m.call.invite",
-    { roomName, link, call_id: callId, version: 1 },
-    ""
-  );
+  const content = {
+    roomName,
+    link,
+    call_id: callId,
+    version: "1",
+    party_id: session.client.getDeviceId(),
+    lifetime: 60000,
+    offer: { sdp: "", type: "offer" },
+  };
+  await session.client.sendEvent(roomId, "m.call.invite", content, "");
 
   // 准备通话
-  callStore.prepare(roomName);
+  callStore.prepare(roomName, false, callId);
 }
 
 /**

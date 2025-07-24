@@ -5,11 +5,13 @@ export const useCallStore = defineStore("call", {
     api: null, // JitsiMeetExternalAPI instance
     state: "idle", // idle | pending | connected
     roomName: "",
+    callId: "",
     incoming: false,
   }),
   actions: {
-    prepare(roomName, incoming = false) {
+    prepare(roomName, incoming = false, callId = "") {
       this.roomName = roomName;
+      this.callId = callId;
       this.incoming = incoming;
       this.state = "pending";
     },
