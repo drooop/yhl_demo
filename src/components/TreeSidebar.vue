@@ -25,7 +25,7 @@ onMounted(async () => {
 function onClick(data, node) {
   const segments = []
   let n = node
-  while (n && n.level > 1) {
+  while (n && n.level >= 1) {
     segments.unshift({ type: n.data.type, label: n.data.label })
     n = n.parent
   }
