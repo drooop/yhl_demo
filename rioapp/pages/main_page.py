@@ -6,6 +6,7 @@ import rio
 from ..services.matrix_service import MatrixService
 from ..components.chat_panel import ChatPanel
 
+
 @rio.page(name="Home", url_segment="")
 class MainPage(rio.Component):
     chat_open: bool = False
@@ -32,17 +33,21 @@ class MainPage(rio.Component):
                     rio.Button("聊天", on_press=self.on_toggle_chat),
                     rio.Button("视频", on_press=self.on_toggle_call),
                     spacing=1,
-                    padding=1,
+                    margin=1,
                 ),
                 rio.Row(
                     rio.Column(
                         rio.Text("Sidebar"),
                         grow_y=True,
                         min_width=20,
-                        fill=rio.rgb(240, 240, 240),
+                        # fill=rio.Color.from_hex("#F0F0F0"),
                     ),
                     rio.Column(
-                        rio.Rectangle(fill=rio.rgb(220, 220, 220), grow_y=True, min_height=20),
+                        rio.Rectangle(
+                            fill=rio.Color.from_hex("#DCDCDC"),
+                            grow_y=True,
+                            min_height=20
+                        ),
                         grow_y=True,
                     ),
                     proportions=[1, 4],
@@ -56,7 +61,8 @@ class MainPage(rio.Component):
                 side="right",
                 is_open=self.chat_open,
                 is_modal=False,
-                on_open_or_close=lambda e: setattr(self, "chat_open", e.is_open),
+                on_open_or_close=lambda e: setattr(
+                    self, "chat_open", e.is_open),
             ),
         )
 
@@ -64,7 +70,8 @@ class MainPage(rio.Component):
             dialog = rio.DialogContainer(
                 build_content=lambda: rio.Column(
                     rio.Text("视频通话"),
-                    rio.Webview("https://meet.jit.si", min_height=25, min_width=40),
+                    rio.Webview("https://meet.jit.si",
+                                min_height=25, min_width=40),
                     rio.Button("关闭", on_press=self.on_toggle_call),
                     spacing=1,
                 ),

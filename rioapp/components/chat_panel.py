@@ -5,6 +5,7 @@ import rio
 
 from ..services.matrix_service import MatrixService
 
+
 class ChatPanel(rio.Component):
     msg: str = ""
 
@@ -32,9 +33,14 @@ class ChatPanel(rio.Component):
         if self.service:
             messages = [f"{u}: {m}" for u, m in self.service.messages]
         return rio.Column(
-            rio.Column(*(rio.Text(m) for m in messages), grow_y=True, scroll_y="auto"),
+            rio.Column(
+                *(rio.Text(m) for m in messages),
+                grow_y=True,
+                # scroll_y="auto"
+            ),
             rio.Row(
-                rio.TextInput(text=self.bind().msg, grow_x=True, on_confirm=self.on_send),
+                rio.TextInput(text=self.bind().msg, grow_x=True,
+                              on_confirm=self.on_send),
                 rio.Button("发送", on_press=self.on_send),
                 spacing=1,
             ),
