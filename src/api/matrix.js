@@ -10,7 +10,7 @@ import { useCallStore } from "../store/call";
 import { RECOVERY_PHRASE, decodeRecoveryPhrase } from "./recovery";
 
 // 控制是否启用加密
-export let useEncryption = true;  // 设置为 false 跳过加密初始化
+export let useEncryption = false;  // 设置为 false 跳过加密初始化
 
 // 加载crypto wasm模块
 let wasmInit;
