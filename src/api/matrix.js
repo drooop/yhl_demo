@@ -233,23 +233,40 @@ export async function placeVideoCall(roomId) {
 
   if (!session.client) throw new Error("Matrix client not ready");
 
-  const roomName = "matrix" + roomId.replace(/[^a-zA-Z0-9]/g, "") + Date.now();
+  const room = session.client.getRoom(roomId);
+  const memberCount = room?.getJoinedMembers?.().length || 0;
+
+  const roomName =
+    "matrix" + roomId.replace(/[^a-zA-Z0-9]/g, "") + Date.now();
   const domain = "meeting.yhlcps.com";
   const link = `https://${domain}/${roomName}`;
+  let callId = "jitsi-" + Date.now();
 
-  // 发送 Element 风格的通话事件，携带 Jitsi 信息
-  const callId = "jitsi-" + Date.now();
-  const content = {
-    roomName,
-    link,
-    domain,
-    call_id: callId,
-    version: "1",
-    party_id: session.client.getDeviceId(),
-    lifetime: 60000,
-    offer: { sdp: "", type: "offer" },
-  };
-  await session.client.sendEvent(roomId, "m.call.invite", content, "");
+  if (memberCount > 2) {
+    const focus = {
+      livekit_alias: roomName,
+      livekit_service_url: `https://${domain}`,
+    };
+    await session.client.sendEvent(
+      roomId,
+      "org.matrix.msc3401.call.member",
+      { foci_preferred: [focus] },
+      ""
+    );
+    callId = "";
+  } else {
+    const content = {
+      roomName,
+      link,
+      domain,
+      call_id: callId,
+      version: "1",
+      party_id: session.client.getDeviceId(),
+      lifetime: 60000,
+      offer: { sdp: "", type: "offer" },
+    };
+    await session.client.sendEvent(roomId, "m.call.invite", content, "");
+  }
 
   // 准备通话
   callStore.prepare(roomName, false, callId, domain);

@@ -21,6 +21,12 @@
           circle
           @click="inviteDialog = true"
         />
+        <el-button
+          v-if="currentRoom"
+          :icon="VideoCamera"
+          circle
+          @click="call"
+        />
       </el-header>
 
       <!-- 消息列表 -->
@@ -74,8 +80,8 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
-import { ElMessage } from "element-plus";
-import { Plus, Refresh, User } from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Plus, Refresh, User, VideoCamera } from "@element-plus/icons-vue";
 
 import { useRoomStore } from "@/store/rooms";
 import { useSessionStore } from "@/store/session";
@@ -87,6 +93,7 @@ import {
   inviteUser,
   refreshRooms,
 } from "@/api/matrix";
+import { placeVideoCall } from "@/api/matrix";
 
 import RoomList from "./RoomList.vue";
 import MessageItem from "./MessageItem.vue";
@@ -107,9 +114,11 @@ const inviteDialog = ref(false);
 const currentRoom = computed(() =>
   rooms.rooms.find((r) => r.roomId === rooms.currentRoomId)
 );
-const timeline = computed(() =>
-  currentRoom.value ? currentRoom.value.timeline : []
-);
+const timeline = computed(() => {
+  // depend on rooms.bump so updates trigger when new events arrive
+  rooms.bump;
+  return currentRoom.value ? currentRoom.value.timeline.slice() : [];
+});
 
 const isOwner = computed(
   () => currentRoom.value?.getCreator?.() === session.userId
@@ -127,6 +136,18 @@ async function handleSend(text) {
 
 /* 上传附件 */
 async function handleUpload(file) {
+  try {
+    await ElMessageBox.confirm(
+      `发送文件 ${file.name}?`,
+      "文件传输",
+      {
+        confirmButtonText: "发送",
+        cancelButtonText: "取消",
+      }
+    );
+  } catch {
+    return;
+  }
   try {
     await sendContent(currentRoom.value.roomId, file);
     nextTick(scrollToBottom);
@@ -172,6 +193,14 @@ async function invite() {
   } catch (e) {
     ElMessage.error("邀请失败");
   }
+}
+
+/* 发起视频通话 */
+function call() {
+  if (!currentRoom.value) return;
+  placeVideoCall(currentRoom.value.roomId).catch((e) =>
+    ElMessage.error("无法发起通话: " + e.message)
+  );
 }
 
 function onRefresh() {
