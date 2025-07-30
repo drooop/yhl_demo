@@ -5,7 +5,11 @@
         <el-input v-model="hs" placeholder="https://matrix.org" />
       </el-form-item>
       <el-form-item label="选择账户">
-        <el-select v-model="selectedAccount" placeholder="请选择账户" @change="applyAccount">
+        <el-select
+          v-model="selectedAccount"
+          placeholder="请选择账户"
+          @change="applyAccount"
+        >
           <el-option label="drop" value="drop" />
           <el-option label="bot" value="bot" />
         </el-select>
@@ -32,18 +36,23 @@ import { loginHomeserver } from "../api/matrix";
 // const user = ref("@drop:nr.lexon.tq.i3s.io");
 const hs = ref("https://synapse.m2m.yhlcps.com");
 const accounts = {
-  drop: "@drop:m2m.yhlcps.com",
-  bot: "@bot:m2m.yhlcps.com",
+  drop: {
+    accountName: "@drop:m2m.yhlcps.com",
+    password: "TQcps@123_",
+  },
+  bot: {
+    accountName: "@bot:m2m.yhlcps.com",
+    password: "TQcps@123_",
+  },
 };
-const defaultPassword = "TQcps@123_";
 const selectedAccount = ref("drop");
-const user = ref(accounts[selectedAccount.value]);
-const pwd = ref(defaultPassword);
+const user = ref(accounts[selectedAccount.value].accountName);
+const pwd = ref(accounts[selectedAccount.value].password);
 const rt = useRouter();
 
 function applyAccount(name) {
-  user.value = accounts[name];
-  pwd.value = defaultPassword;
+  user.value = accounts[name].accountName;
+  pwd.value = accounts[name].password;
 }
 
 async function onLogin() {

@@ -5,7 +5,12 @@ import "element-plus/dist/index.css";
 import router from "./router";
 import App from "./App.vue";
 import * as sdk from "matrix-js-sdk";
-import { setupClient, ensureEncryptionSetup, loadCryptoWasm } from "./api/matrix";
+import {
+  setupClient,
+  ensureEncryptionSetup,
+  loadCryptoWasm,
+  useEncryption,
+} from "./api/matrix";
 import { decodeRecoveryPhrase } from "./api/recovery";
 import { useSessionStore } from "./store/session";
 
@@ -35,12 +40,14 @@ if (baseUrl && accessToken && userId) {
     },
   });
   setupClient(client); // ← 同一监听
-  loadCryptoWasm()
-    .then(() => client.initRustCrypto())
-    .then(async () => {
-      await ensureEncryptionSetup(client);
-      client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
-    });
+  if (useEncryption) {
+    loadCryptoWasm()
+      .then(() => client.initRustCrypto())
+      .then(async () => {
+        await ensureEncryptionSetup(client);
+        client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
+      });
+  }
 
   useSessionStore().setClient(client);
 }
