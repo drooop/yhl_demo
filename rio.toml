@@ -1,4 +1,0 @@
-[app]
-app-type = "website"
-main-module = "rioapp"
-project-files = ["*.py", "rioapp/", "rio.toml"]
