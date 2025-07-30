@@ -39,7 +39,7 @@ if (baseUrl && accessToken && userId) {
       },
     },
   });
-  setupClient(client); // ← 同一监听
+  setupClient(client); // ← common listeners
   if (useEncryption) {
     loadCryptoWasm()
       .then(() => client.initRustCrypto())
@@ -47,6 +47,8 @@ if (baseUrl && accessToken && userId) {
         await ensureEncryptionSetup(client);
         client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
       });
+  } else {
+    client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
   }
 
   useSessionStore().setClient(client);

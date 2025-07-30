@@ -24,6 +24,7 @@ export function loadCryptoWasm() {
 
 // Ensure the public identity is available by performing keys query
 export async function ensurePublicIdentity(client) {
+  if (!useEncryption) return; // Skip when encryption is disabled
   try {
     await client.getCrypto().getKeys([client.getUserId()]); // Query the keys for the current user
     console.log("Public identity query completed successfully.");
@@ -100,17 +101,16 @@ export async function loginHomeserver({ baseUrl, user, password }) {
     },
   });
 
-  await loadCryptoWasm();
-  await client.initRustCrypto();
   if (useEncryption) {
-    await ensureEncryptionSetup(client);  // 初始化加密
-  }
-  await ensurePublicIdentity(client); // Ensure public identity is available
-
-  try {
-    await client.getCrypto().requestOwnUserVerification();
-  } catch {
-    /* ignore */
+    await loadCryptoWasm();
+    await client.initRustCrypto();
+    await ensureEncryptionSetup(client); // 初始化加密
+    await ensurePublicIdentity(client); // Ensure public identity is available
+    try {
+      await client.getCrypto().requestOwnUserVerification();
+    } catch {
+      /* ignore */
+    }
   }
 
   setupClient(client);
@@ -252,6 +252,7 @@ export async function ensureEncryptionSetup(client) {
  * ----------------------------------------------------- */
 export function requestVerificationFromMobile() {
   const { client } = useSessionStore();
+  if (!useEncryption) return Promise.resolve();
   return client.getCrypto().requestOwnUserVerification();
 }
 
@@ -260,6 +261,7 @@ export function requestVerificationFromMobile() {
  */
 export async function importCrossSigningKeys() {
   const { client } = useSessionStore();
+  if (!useEncryption) return;
   try {
     await client.getCrypto().importCrossSigningKeys();
   } catch (error) {

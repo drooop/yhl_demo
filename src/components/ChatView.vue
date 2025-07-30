@@ -25,10 +25,13 @@ const scroller = ref(null);
 function scrollBottom() {
   scroller.value && (scroller.value.scrollTop = scroller.value.scrollHeight);
 }
-// watch(timeline, () => scrollBottom());
 onMounted(scrollBottom);
 watch(
   () => roomStore.currentRoomId,
+  () => nextTick(scrollBottom)
+);
+watch(
+  () => roomStore.bump,
   () => nextTick(scrollBottom)
 );
 </script>
@@ -43,5 +46,6 @@ watch(
   flex: 1;
   overflow: auto;
   padding: 16px;
+  scroll-behavior: smooth;
 }
 </style>
