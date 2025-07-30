@@ -1,108 +1,86 @@
 <template>
-  <div :class="['msg', isMe ? 'me' : 'other', failed && 'failed']">
-    <!-- 文本 -->
-    <div v-if="isText" class="bubble">{{ content.body }}</div>
+  <div :class="['msg-wrap', fromMe ? 'me' : '']">
+    <el-avatar class="avatar" :src="avatarUrl" :size="32">
+      {{ initials }}
+    </el-avatar>
 
-    <!-- 通话邀请 -->
-    <div v-else-if="isCallInvite" class="bubble">[视频通话邀请]</div>
-
-    <!-- 图片 -->
-    <el-card v-else-if="isImage" class="card">
-      <el-image :src="mxcUrl" fit="cover" style="width: 150px; height: 150px" />
-      <template #footer>
-        <el-button link @click="download">下载</el-button>
+    <div class="bubble">
+      <!-- 文本 -->
+      <template v-if="isText">
+        <p class="text">{{ content.body }}</p>
       </template>
-    </el-card>
 
-    <!-- 文件 -->
-    <el-card v-else-if="isFile" class="card file">
-      <div>{{ content.body }} ({{ prettySize }})</div>
-      <template #footer>
-        <el-button link @click="download">下载</el-button>
+      <!-- 图片 -->
+      <template v-else-if="isImage">
+        <el-image
+          :src="mxcToUrl(content.url)"
+          :preview-src-list="[mxcToUrl(content.url)]"
+        />
       </template>
-    </el-card>
 
-    <!-- 原始消息 -->
-    <div v-else class="bubble raw">{{ rawJson }}</div>
+      <!-- 文件 -->
+      <template v-else>
+        <el-link :href="mxcToUrl(content.url)" target="_blank">{{
+          content.body
+        }}</el-link>
+      </template>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from "vue";
-import { useSessionStore } from "../store/session";
-import * as sdk from "matrix-js-sdk";
+import { useSessionStore } from "@/store/session";
 
-const props = defineProps({ event: Object });
+const props = defineProps({
+  event: Object,
+  me: String,
+});
+
 const session = useSessionStore();
 
+const sender = props.event.getSender();
 const content = props.event.getContent();
-const isMe = props.event.getSender() === session.userId;
+
+const fromMe = computed(() => sender === props.me);
 const isText = content.msgtype === "m.text";
-const failed = props.event.status === "not_sent";
 const isImage = content.msgtype === "m.image";
-const isFile = content.msgtype === "m.file";
-const isCallInvite = props.event.getType() === "m.call.invite";
-const rawJson = JSON.stringify(props.event.event);
 
-const mxcUrl = computed(() =>
-  // session.client.mxcUrlToHttp(content.url, 300, 300, "scale")
-  sdk.getHttpUriForMxc(session.client.baseUrl, content.url, 300, 300, "scale")
-);
-const prettySize = (content.info?.size / 1024).toFixed(1) + " KB";
+const avatarUrl = ""; // 可以自行从 profile store 获取
+const initials = sender?.replace("@", "").charAt(0).toUpperCase();
 
-async function download() {
-  const url = session.client.mxcUrlToHttp(
-    content.url,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    true
-  );
-  const resp = await fetch(url, {
-    headers: { Authorization: "Bearer " + session.client.getAccessToken() },
-  });
-  if (!resp.ok) return;
-  const blob = await resp.blob();
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = content.body;
-  a.click();
-  URL.revokeObjectURL(a.href);
+/* 简易 MXC => HTTP 转换（Synapse 默认模式）*/
+function mxcToUrl(mxc) {
+  if (!mxc?.startsWith("mxc://")) return mxc;
+  const base = session.baseUrl?.replace(/\/$/, "");
+  const [, server, mediaId] = mxc.match(/^mxc:\/\/([^/]+)\/(.+)$/);
+  return `${base}/_matrix/media/v3/download/${server}/${mediaId}`;
 }
 </script>
 
 <style scoped>
-.msg {
-  margin: 8px 0;
+.msg-wrap {
   display: flex;
+  margin-bottom: 8px;
 }
-.me {
-  justify-content: flex-end;
+.msg-wrap.me {
+  flex-direction: row-reverse;
+}
+.avatar {
+  flex: 0 0 32px;
 }
 .bubble {
-  background: #409eff;
-  color: #fff;
-  padding: 8px 16px;
+  max-width: 65%;
+  padding: 6px 10px;
   border-radius: 6px;
+  background: var(--el-fill-color-light);
+  margin: 0 8px;
+  word-break: break-word;
 }
-.raw {
-  word-break: break-all;
-  font-family: monospace;
+.msg-wrap.me .bubble {
+  background: var(--el-color-primary-light-9);
 }
-.card {
-  max-width: 200px;
-}
-.failed {
-  opacity: 0.4;
-  position: relative;
-}
-.failed::after {
-  content: "未发送";
-  color: red;
-  position: absolute;
-  top: -14px;
-  right: 0;
+.text {
+  margin: 0;
 }
 </style>

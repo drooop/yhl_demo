@@ -1,119 +1,140 @@
 <template>
-  <el-empty v-if="!room" description="请选择一个房间" />
-  <div v-else class="chat">
-    <div class="toolbar">
-      <el-button circle icon="Plus" @click="toolVisible = true" />
-      <el-button circle icon="Refresh" @click="onRefresh" />
-    </div>
-    <div ref="scroller" class="history">
-      <MessageItem v-for="e in timeline" :key="e.getId()" :event="e" />
-    </div>
-    <MessageInput :room-id="room.roomId" />
-    <el-dialog v-model="toolVisible" title="房间功能" width="400px">
-      <el-form label-width="80px">
-        <el-form-item label="新建房间">
-          <el-input v-model="newRoom" placeholder="房间名" />
-          <el-button @click="create">创建</el-button>
-        </el-form-item>
-        <el-form-item label="加入房间">
-          <el-input v-model="joinId" placeholder="房间地址" />
-          <el-button @click="join">加入</el-button>
-        </el-form-item>
-        <el-form-item label="邀请用户">
-          <el-input v-model="inviteId" placeholder="@user:example.com" />
-          <el-button @click="invite">邀请</el-button>
-        </el-form-item>
-      </el-form>
-    </el-dialog>
-  </div>
+  <!-- 整体三栏布局 -->
+  <el-container class="chat-app">
+    <!-- 左：房间列表 -->
+    <el-aside width="260">
+      <RoomList />
+    </el-aside>
+
+    <!-- 中：消息面板 -->
+    <el-container>
+      <!-- 房间顶部栏 -->
+      <el-header height="48" class="chat-header" v-loading="!currentRoom">
+        <span class="title">{{ currentRoom?.name || "请选择房间" }}</span>
+        <el-button
+          v-if="currentRoom"
+          :icon="MoreFilled"
+          circle
+          @click="drawer = true"
+        />
+      </el-header>
+
+      <!-- 消息列表 -->
+      <el-main class="chat-main">
+        <el-scrollbar ref="scrollRef" class="scroll">
+          <MessageItem
+            v-for="ev in timeline"
+            :key="ev.getId()"
+            :event="ev"
+            :me="session.userId"
+          />
+        </el-scrollbar>
+      </el-main>
+
+      <!-- 底部输入 -->
+      <el-footer height="auto" class="chat-input">
+        <MessageInput
+          :disabled="!currentRoom"
+          @send="handleSend"
+          @upload="handleUpload"
+        />
+      </el-footer>
+    </el-container>
+  </el-container>
+
+  <!-- 右侧抽屉 -->
+  <ChatDrawer v-model="drawer" :room="currentRoom" />
+
+  <!-- 呼叫覆盖层（可选） -->
+  <CallLayer />
 </template>
 
 <script setup>
-import { onMounted, watch, nextTick, ref, computed } from "vue";
-import { useRoomStore } from "../store/rooms";
-import MessageItem from "./MessageItem.vue";
-import { createRoom, joinRoom, inviteUser, refreshRooms } from "../api/matrix";
+import { ref, computed, watch, onMounted } from "vue";
 import { ElMessage } from "element-plus";
+import { MoreFilled } from "@element-plus/icons-vue";
 
-const roomStore = useRoomStore();
-const room = computed(() => roomStore.currentRoom);
-const timeline = computed(() => {
-  // 读取 roomStore.bump，确保依赖收集到
-  roomStore.bump;
-  return room.value?.timeline || [];
-});
+import { useRoomStore } from "@/store/rooms";
+import { useSessionStore } from "@/store/session";
+import { sendText, sendContent } from "@/api/matrix";
 
-const scroller = ref(null);
-function scrollBottom() {
-  scroller.value && (scroller.value.scrollTop = scroller.value.scrollHeight);
-}
-onMounted(scrollBottom);
-watch(
-  () => roomStore.currentRoomId,
-  () => nextTick(scrollBottom)
+import RoomList from "./RoomList.vue";
+import MessageItem from "./MessageItem.vue";
+import MessageInput from "./MessageInput.vue";
+import ChatDrawer from "./ChatDrawer.vue";
+import CallLayer from "./CallLayer.vue";
+
+const rooms = useRoomStore();
+const session = useSessionStore();
+
+const drawer = ref(false);
+const scrollRef = ref(null);
+
+/* 当前房间 & 时间线 */
+const currentRoom = computed(() =>
+  rooms.rooms.find((r) => r.roomId === rooms.currentRoomId)
 );
-watch(
-  () => roomStore.bump,
-  () => nextTick(scrollBottom)
+const timeline = computed(() =>
+  currentRoom.value ? currentRoom.value.timeline : []
 );
 
-const toolVisible = ref(false);
-const newRoom = ref("");
-const joinId = ref("");
-const inviteId = ref("");
-
-async function create() {
+/* 发送文本 */
+async function handleSend(text) {
   try {
-    await createRoom(newRoom.value);
-    newRoom.value = "";
-    toolVisible.value = false;
-    refreshRooms();
-  } catch {
-    ElMessage.error("房间创建失败");
+    await sendText(currentRoom.value.roomId, text);
+    nextTick(scrollToBottom);
+  } catch (e) {
+    ElMessage.error("发送失败: " + e.message);
   }
 }
 
-async function join() {
+/* 上传附件 */
+async function handleUpload(file) {
   try {
-    await joinRoom(joinId.value);
-    joinId.value = "";
-    toolVisible.value = false;
-    refreshRooms();
-  } catch {
-    ElMessage.error("加入房间失败");
+    await sendContent(currentRoom.value.roomId, file);
+    nextTick(scrollToBottom);
+  } catch (e) {
+    ElMessage.error("上传失败: " + e.message);
   }
 }
 
-async function invite() {
-  try {
-    await inviteUser(room.value.roomId, inviteId.value);
-    inviteId.value = "";
-    toolVisible.value = false;
-  } catch {
-    ElMessage.error("邀请失败");
-  }
+/* 自动滚到底部 */
+function scrollToBottom() {
+  const s = scrollRef.value;
+  if (s) s.setScrollTop(s.wrapRef.scrollHeight);
 }
 
-function onRefresh() {
-  refreshRooms();
-}
+/* 当房间或时间线变化时滚到底 */
+watch([currentRoom, timeline], scrollToBottom);
+
+onMounted(scrollToBottom);
 </script>
 
 <style scoped>
-.chat {
+.chat-app {
+  height: 100vh;
+}
+.chat-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background-color: var(--el-fill-color-light);
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+.chat-header .title {
+  font-weight: 600;
+  font-size: 15px;
+}
+.chat-main {
+  padding: 8px 16px 0;
+}
+.scroll {
   height: 100%;
 }
-.toolbar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 4px 8px;
-}
-.history {
-  flex: 1;
-  overflow: auto;
-  padding: 16px;
-  scroll-behavior: smooth;
+.chat-input {
+  padding: 8px 12px;
+  border-top: 1px solid var(--el-border-color-light);
+  background: var(--el-bg-color);
 }
 </style>

@@ -1,56 +1,66 @@
 <template>
-  <div class="inputbar">
-    <el-input v-model="text" @keyup.enter="send" placeholder="说点什么…" />
-    <el-upload :auto-upload="false" :limit="1" :on-change="onFile">
-      <template #trigger>
-        <el-button circle icon="Upload" />
-      </template>
-    </el-upload>
-    <el-button type="primary" @click="send">发送</el-button>
-    <el-button type="success" @click="call">视频通话</el-button>
-  </div>
+  <el-input
+    v-model="draft"
+    type="textarea"
+    :rows="2"
+    placeholder="发送消息 (Ctrl+Enter)"
+    :disabled="disabled"
+    @keydown="onKey"
+  >
+    <template #append>
+      <el-upload
+        :show-file-list="false"
+        :disabled="disabled"
+        :before-upload="beforeUpload"
+      >
+        <el-button :icon="Paperclip" circle />
+      </el-upload>
+
+      <el-button
+        type="primary"
+        :disabled="disabled || !draft.trim()"
+        :icon="Position"
+        @click="emitSend"
+      />
+    </template>
+  </el-input>
 </template>
 
 <script setup>
 import { ref } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { sendText, sendContent, placeVideoCall } from "../api/matrix";
+import { Paperclip, Position } from "@element-plus/icons-vue";
 
-const props = defineProps({ roomId: String });
-const text = ref("");
+const props = defineProps({
+  disabled: Boolean,
+});
+const emit = defineEmits(["send", "upload"]);
 
-async function send() {
-  if (!text.value.trim()) return;
-  try {
-    await sendText(props.roomId, text.value);
-  } catch {
-    ElMessage.error("消息发送失败");
-  }
-  text.value = "";
+const draft = ref("");
+
+function emitSend() {
+  if (!draft.value.trim()) return;
+  emit("send", draft.value.trim());
+  draft.value = "";
 }
 
-async function onFile(file) {
-  try {
-    await ElMessageBox.confirm(
-      `发送 ${file.name} (${(file.size / 1024).toFixed(1)} KB)？`,
-      "确认发送",
-      { type: "info", confirmButtonText: "发送", cancelButtonText: "取消" }
-    );
-    await sendContent(props.roomId, file.raw);
-  } catch (e) {
-    if (e !== "cancel" && e !== "close") ElMessage.error("附件发送失败");
+function onKey(e) {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    emitSend();
   }
 }
 
-function call() {
-  placeVideoCall(props.roomId);
+/* 上传前钩子-直接把 file 对象交给父组件 */
+function beforeUpload(file) {
+  emit("upload", file);
+  return false; // 阻止 el-upload 自动提交
 }
 </script>
 
 <style scoped>
-.inputbar {
+/* 让 textarea 与按钮在同一行 */
+:deep(.el-input__wrapper) {
   display: flex;
-  gap: 8px;
-  padding: 8px;
+  align-items: center;
 }
 </style>
