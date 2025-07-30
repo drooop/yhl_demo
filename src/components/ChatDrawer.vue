@@ -9,11 +9,13 @@
     <template v-if="room">
       <p><strong>ID:</strong> {{ room.roomId }}</p>
       <p><strong>成员:</strong></p>
-      <el-list v-if="members.length">
-        <el-list-item v-for="m in members" :key="m.userId">
-          {{ m.name || m.userId }}
-        </el-list-item>
-      </el-list>
+      <el-scrollbar v-if="members.length" class="member-scroll">
+        <ul class="member-list">
+          <li v-for="m in members" :key="m.userId" class="member-item">
+            {{ m.name || m.userId }}
+          </li>
+        </ul>
+      </el-scrollbar>
       <el-empty v-else description="暂无成员" />
     </template>
     <el-empty v-else description="请选择房间" />
@@ -45,4 +47,16 @@ const members = computed(() =>
 );
 </script>
 
-<style scoped></style>
+<style scoped>
+.member-scroll {
+  max-height: 200px;
+}
+.member-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.member-item {
+  padding: 4px 0;
+}
+</style>
