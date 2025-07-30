@@ -46,7 +46,7 @@
         </el-main>
       </el-container>
     </el-container>
-    <ChatDrawer v-model:visible="chatVisible" />
+    <ChatDrawer v-model="chatVisible" />
   </el-container>
 </template>
 
