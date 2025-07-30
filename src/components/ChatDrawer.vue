@@ -1,5 +1,5 @@
 <template>
-  <el-drawer :model-value="visible" @close="$emit('update:visible', false)" size="50%" direction="rtl">
+  <el-drawer :model-value="visible" @close="$emit('update:visible', false)" size="100%" direction="rtl">
     <template #header>
       <span>聊天</span>
     </template>

@@ -7,6 +7,19 @@
       </div>
       <div class="right">
         <el-icon @click="chatVisible = true" class="action"><ChatDotRound /></el-icon>
+        <el-popover placement="bottom" trigger="click">
+          <template #reference>
+            <el-badge :value="invites.length" class="action">
+              <el-icon><Bell /></el-icon>
+            </el-badge>
+          </template>
+          <div v-if="invites.length">
+            <el-button v-for="r in invites" :key="r.roomId" text @click="acceptInvite(r)">
+              {{ r.name || r.roomId }}
+            </el-button>
+          </div>
+          <div v-else>暂无邀请</div>
+        </el-popover>
         <el-dropdown>
           <span class="action"><el-icon><User /></el-icon></span>
           <template #dropdown>
@@ -40,15 +53,20 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { House, ChatDotRound, User } from '@element-plus/icons-vue'
+import { House, ChatDotRound, User, Bell } from '@element-plus/icons-vue'
 import TreeSidebar from '../components/TreeSidebar.vue'
 import ChatDrawer from '../components/ChatDrawer.vue'
 import { useSessionStore } from '../store/session'
+import { useRoomStore } from '../store/rooms'
+import { joinRoom, refreshRooms } from '../api/matrix'
+import { ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
 const session = useSessionStore()
+const rooms = useRoomStore()
 const chatVisible = ref(false)
+const invites = computed(() => rooms.invites)
 const crumbs = computed(() => {
   const items = []
   const ws = route.params.workspace
@@ -89,6 +107,17 @@ function logout() {
 
 function toSettings() {
   router.push('/settings')
+}
+
+async function acceptInvite(room) {
+  try {
+    await ElMessageBox.confirm(`加入房间 ${room.name || room.roomId}?`, '邀请', {
+      confirmButtonText: '接受',
+      cancelButtonText: '取消'
+    })
+    await joinRoom(room.roomId)
+    refreshRooms()
+  } catch {}
 }
 </script>
 

@@ -39,10 +39,18 @@ export function setupClient(client) {
   const callStore = useCallStore();
   const session = useSessionStore();
 
+  function refresh() {
+    const all = client.getRooms();
+    rooms.setRooms(all.filter((r) => r.getMyMembership() === "join"));
+    rooms.setInvites(all.filter((r) => r.getMyMembership() === "invite"));
+  }
+
   // 1) 同步完成
   client.on("sync", (state) => {
-    if (state === "PREPARED") rooms.setRooms(client.getRooms());
+    if (state === "PREPARED") refresh();
   });
+
+  client.on("Room.myMembership", refresh);
 
   // 2) 时间线变更
   client.on("Room.timeline", (ev, room) => {
@@ -186,6 +194,33 @@ export async function sendContent(roomId, file) {
     },
     ""
   );
+}
+
+/* -------------------------------------------------------
+ * 房间/成员相关操作
+ * ----------------------------------------------------- */
+export async function createRoom(name) {
+  const { client } = useSessionStore();
+  return client.createRoom({ visibility: "private", name });
+}
+
+export async function joinRoom(roomIdOrAlias) {
+  const { client } = useSessionStore();
+  return client.joinRoom(roomIdOrAlias);
+}
+
+export async function inviteUser(roomId, userId) {
+  const { client } = useSessionStore();
+  return client.invite(roomId, userId);
+}
+
+export function refreshRooms() {
+  const { client } = useSessionStore();
+  const rooms = useRoomStore();
+  const all = client.getRooms();
+  rooms.setRooms(all.filter((r) => r.getMyMembership() === "join"));
+  rooms.setInvites(all.filter((r) => r.getMyMembership() === "invite"));
+  rooms.ping();
 }
 
 /* -------------------------------------------------------
