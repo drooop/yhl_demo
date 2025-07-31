@@ -1,9 +1,12 @@
 <template>
   <el-drawer
+    title="管理总线"
     v-model="modelValue"
-    :with-header="false"
     size="100%"
     direction="rtl"
+    close-on-press-escape
+    close-delay="200"
+    show-close="true"
   >
     <ChatView />
   </el-drawer>
@@ -28,5 +31,4 @@ const modelValue = computed({
 });
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>

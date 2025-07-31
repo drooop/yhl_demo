@@ -232,7 +232,7 @@ onMounted(() => {
 
 <style scoped>
 .chat-app {
-  height: 100vh;
+  height: 80vh;
 }
 .chat-header {
   display: flex;
