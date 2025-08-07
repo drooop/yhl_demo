@@ -19,13 +19,20 @@
 </template>
 
 <script setup lang="ts">
-import type { Room } from "matrix-js-sdk";
+import type { Room, NotificationCountType } from "matrix-js-sdk";
 import { useRoomStore } from "@/stores/rooms";
+import { useSessionStore } from "@/stores/session";
 
 const rooms = useRoomStore();
+const session = useSessionStore();
 
 function selectRoom(id: string) {
   rooms.currentRoomId = id;
+  const room = session.client?.getRoom(id);
+  const last = room?.timeline[room.timeline.length - 1];
+  if (last) session.client?.sendReadReceipt(last);
+  room?.setUnreadNotificationCount(NotificationCountType.Total, 0);
+  room?.setUnreadNotificationCount(NotificationCountType.Highlight, 0);
 }
 
 function unread(room: Room) {

@@ -58,6 +58,9 @@ export function setupClient(client) {
 
     if (!data?.liveEvent) return;
 
+    const ts = typeof ev.getTs === "function" ? ev.getTs() : 0;
+    if (Date.now() - ts > 5000) return;
+
     if (ev.getType() === "m.call.invite" && ev.getSender() !== session.userId) {
       const { roomName, call_id, domain } = ev.getContent() || {};
       if (roomName) callStore.prepare(roomName, true, call_id, domain);

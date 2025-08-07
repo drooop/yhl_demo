@@ -13,20 +13,22 @@
     <!-- 中：消息面板 -->
     <el-container>
       <!-- 房间顶部栏 -->
-      <el-header height="48" class="chat-header" v-loading="!currentRoom">
+      <el-header height="48" class="chat-header">
         <span class="title">{{ currentRoom?.name || "请选择房间" }}</span>
-        <el-button
-          v-if="currentRoom && isOwner"
-          :icon="User"
-          circle
-          @click="inviteDialog = true"
-        />
-        <el-button
-          v-if="currentRoom"
-          :icon="VideoCamera"
-          circle
-          @click="call"
-        />
+        <div class="actions">
+          <el-button
+            v-if="currentRoom && isOwner"
+            :icon="User"
+            circle
+            @click="inviteDialog = true"
+          />
+          <el-button
+            v-if="currentRoom"
+            :icon="VideoCamera"
+            circle
+            @click="call"
+          />
+        </div>
       </el-header>
 
       <!-- 消息列表 -->
@@ -243,13 +245,17 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 12px;
+  padding: 0 16px;
   background-color: var(--el-fill-color-light);
   border-bottom: 1px solid var(--el-border-color-light);
 }
 .chat-header .title {
   font-weight: 600;
   font-size: 15px;
+}
+.chat-header .actions {
+  display: flex;
+  gap: 8px;
 }
 .chat-main {
   padding: 8px 16px 0;

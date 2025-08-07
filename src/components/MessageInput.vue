@@ -9,31 +9,35 @@
   >
     <template #append>
       <el-upload
+        ref="uploadRef"
         :show-file-list="false"
         :disabled="disabled"
         :before-upload="beforeUpload"
       >
-        <el-button :icon="Paperclip" circle />
+        <el-button :icon="Plus" circle />
       </el-upload>
 
       <el-button
         type="primary"
         :disabled="disabled || !draft.trim()"
-        :icon="Position"
         @click="emitSend"
-      />
+      >
+        发送
+      </el-button>
     </template>
   </el-input>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
-import { Paperclip, Position } from "@element-plus/icons-vue";
+import type { UploadInstance } from "element-plus";
+import { Plus } from "@element-plus/icons-vue";
 
 const props = defineProps<{ disabled: boolean }>();
 const emit = defineEmits<{ (e: "send", text: string): void; (e: "upload", file: File): void }>();
 
 const draft = ref("");
+const uploadRef = ref<UploadInstance>();
 
 function emitSend() {
   if (!draft.value.trim()) return;
@@ -50,6 +54,7 @@ function onKey(e: KeyboardEvent) {
 
 function beforeUpload(file: File) {
   emit("upload", file);
+  uploadRef.value?.clearFiles();
   return false;
 }
 </script>
