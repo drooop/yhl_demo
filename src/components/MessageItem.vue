@@ -7,18 +7,28 @@
       </template>
       <template v-else-if="isImage">
         <el-image
-          :src="mxcToUrl(content.url)"
-          :preview-src-list="[mxcToUrl(content.url)]"
+          :src="imgSrc"
+          :preview-src-list="[imgSrc]"
           class="img"
         />
-        <el-button size="small" :icon="Download" text @click="download(content.url)">
+        <el-button
+          size="small"
+          :icon="Download"
+          text
+          @click="downloadFile(content.url, content.body)"
+        >
           下载
         </el-button>
       </template>
       <template v-else>
         <el-icon><Paperclip /></el-icon>
         <span class="file-name">{{ content.body }}</span>
-        <el-button size="small" :icon="Download" text @click="download(content.url)">
+        <el-button
+          size="small"
+          :icon="Download"
+          text
+          @click="downloadFile(content.url, content.body)"
+        >
           下载
         </el-button>
       </template>
@@ -27,10 +37,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, onMounted, watch, onBeforeUnmount } from "vue";
 import { Download, Paperclip } from "@element-plus/icons-vue";
 import type { MatrixEvent } from "matrix-js-sdk";
-import { useSessionStore } from "@/stores/session";
+import { useMatrixMedia } from "@/hooks/useMatrixMedia";
 
 interface Props {
   event: MatrixEvent;
@@ -38,7 +48,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-const session = useSessionStore();
+const { getObjectUrl, downloadFile } = useMatrixMedia();
 
 const sender = props.event.getSender();
 const content = props.event.getContent();
@@ -50,16 +60,22 @@ const isImage = content.msgtype === "m.image";
 const avatarUrl = "";
 const initials = sender?.replace("@", "").charAt(0).toUpperCase();
 
-function mxcToUrl(mxc: string) {
-  if (!mxc?.startsWith("mxc://")) return mxc;
-  const base = session.baseUrl?.replace(/\/$/, "");
-  const [, server, mediaId] = mxc.match(/^mxc:\/\/([^/]+)\/(.+)$/) || [];
-  return `${base}/_matrix/media/v3/download/${server}/${mediaId}`;
+const imgSrc = ref("");
+async function loadImage() {
+  if (isImage) {
+    try {
+      imgSrc.value = await getObjectUrl(content.url);
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
-function download(url: string) {
-  window.open(mxcToUrl(url), "_blank");
-}
+onMounted(loadImage);
+watch(() => content.url, loadImage);
+onBeforeUnmount(() => {
+  if (imgSrc.value) URL.revokeObjectURL(imgSrc.value);
+});
 </script>
 
 <style scoped lang="scss">
