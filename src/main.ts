@@ -1,7 +1,7 @@
 import { createApp } from "vue";
-import { createPinia } from "pinia";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
+import "./styles/theme.scss";
 import router from "./router";
 import App from "./App.vue";
 import * as sdk from "matrix-js-sdk";
@@ -12,34 +12,30 @@ import {
   useEncryption,
 } from "./api/matrix";
 import { decodeRecoveryPhrase } from "./api/recovery";
-import { useSessionStore } from "./store/session";
-
-// -------- 自动恢复 Matrix 会话 ----------
-const baseUrl = localStorage.getItem("baseUrl");
-const accessToken = localStorage.getItem("accessToken");
-const userId = localStorage.getItem("userId");
-const deviceId = localStorage.getItem("deviceId");
+import pinia from "./stores";
+import { useSessionStore } from "./stores/session";
 
 const app = createApp(App);
-app.use(createPinia());
+app.use(pinia);
 app.use(ElementPlus);
 app.use(router);
 
-if (baseUrl && accessToken && userId) {
+const session = useSessionStore();
+
+if (session.isLogin && session.baseUrl && session.accessToken && session.userId) {
   const client = sdk.createClient({
-    baseUrl,
-    accessToken,
-    userId,
-    deviceId,
+    baseUrl: session.baseUrl,
+    accessToken: session.accessToken,
+    userId: session.userId,
+    deviceId: session.deviceId,
     cryptoCallbacks: {
-      // 测试环境中直接使用固定助记词解锁密钥库
       getSecretStorageKey: async ({ keys }) => {
         const keyId = Object.keys(keys)[0];
         return [keyId, decodeRecoveryPhrase()];
       },
     },
   });
-  setupClient(client); // ← common listeners
+  setupClient(client);
   if (useEncryption) {
     loadCryptoWasm()
       .then(() => client.initRustCrypto())
@@ -50,8 +46,7 @@ if (baseUrl && accessToken && userId) {
   } else {
     client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
   }
-
-  useSessionStore().setClient(client);
+  session.setClient(client);
 }
 
 app.mount("#app");

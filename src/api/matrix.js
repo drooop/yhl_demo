@@ -3,9 +3,9 @@
  * ----------------------------------------------------- */
 import * as sdk from "matrix-js-sdk";
 import * as RustCrypto from "@matrix-org/matrix-sdk-crypto-wasm";
-import { useSessionStore } from "../store/session";
-import { useRoomStore } from "../store/rooms";
-import { useCallStore } from "../store/call";
+import { useSessionStore } from "../stores/session";
+import { useRoomStore } from "../stores/rooms";
+import { useCallStore } from "../stores/call";
 
 import { RECOVERY_PHRASE, decodeRecoveryPhrase } from "./recovery";
 
@@ -53,16 +53,16 @@ export function setupClient(client) {
   client.on("Room.myMembership", refresh);
 
   // 2) 时间线变更
-  client.on("Room.timeline", (ev, room) => {
-    if (room.roomId === rooms.currentRoomId) rooms.ping(); // 触发布局刷新
+  client.on("Room.timeline", (ev, room, toStart, removed, data) => {
+    if (room.roomId === rooms.currentRoomId) rooms.ping();
 
-    // 来电事件: 旧版 m.call.invite
+    if (!data?.liveEvent) return;
+
     if (ev.getType() === "m.call.invite" && ev.getSender() !== session.userId) {
       const { roomName, call_id, domain } = ev.getContent() || {};
       if (roomName) callStore.prepare(roomName, true, call_id, domain);
     }
 
-    // 来电事件: MSC3401 群组呼叫
     if (
       ev.getType() === "org.matrix.msc3401.call.member" &&
       ev.getSender() !== session.userId
@@ -124,12 +124,14 @@ export async function loginHomeserver({ baseUrl, user, password }) {
   setupClient(client);
   client.startClient({ initialSyncLimit: 20, pollTimeout: 10000 });
 
-  useSessionStore().setClient(client);
-
-  localStorage.setItem("baseUrl", baseUrl);
-  localStorage.setItem("userId", res.user_id);
-  localStorage.setItem("accessToken", res.access_token);
-  localStorage.setItem("deviceId", deviceId);
+  const sessionStore = useSessionStore();
+  sessionStore.setClient(client);
+  sessionStore.setToken({
+    baseUrl,
+    accessToken: res.access_token,
+    userId: res.user_id,
+    deviceId,
+  });
 
   return client;
 }
@@ -145,9 +147,6 @@ export async function logout() {
     /* ignore */
   }
   session.$reset();
-  ["baseUrl", "userId", "accessToken", "deviceId"].forEach((k) =>
-    localStorage.removeItem(k)
-  );
 }
 
 /* -------------------------------------------------------

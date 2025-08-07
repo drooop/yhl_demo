@@ -18,22 +18,22 @@
   </el-scrollbar>
 </template>
 
-<script setup>
-import { useRoomStore } from "@/store/rooms";
+<script setup lang="ts">
+import type { Room } from "matrix-js-sdk";
+import { useRoomStore } from "@/stores/rooms";
 
 const rooms = useRoomStore();
 
-function selectRoom(id) {
+function selectRoom(id: string) {
   rooms.currentRoomId = id;
 }
 
-/* 计算未读数 */
-function unread(room) {
+function unread(room: Room) {
   return Math.max(room.getUnreadNotificationCount(), 0);
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .room-scroll {
   height: 100%;
   border-right: 1px solid var(--el-border-color-light);

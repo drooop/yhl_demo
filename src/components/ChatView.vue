@@ -78,13 +78,14 @@
   <CallLayer />
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage, ElMessageBox, ElScrollbar } from "element-plus";
+import type { MatrixEvent } from "matrix-js-sdk";
 import { Plus, Refresh, User, VideoCamera } from "@element-plus/icons-vue";
 
-import { useRoomStore } from "@/store/rooms";
-import { useSessionStore } from "@/store/session";
+import { useRoomStore } from "@/stores/rooms";
+import { useSessionStore } from "@/stores/session";
 import {
   sendText,
   sendContent,
@@ -103,7 +104,7 @@ import CallLayer from "./CallLayer.vue";
 const rooms = useRoomStore();
 const session = useSessionStore();
 
-const scrollRef = ref(null);
+const scrollRef = ref<InstanceType<typeof ElScrollbar> | null>(null);
 const toolVisible = ref(false);
 const newRoom = ref("");
 const joinId = ref("");
@@ -114,10 +115,14 @@ const inviteDialog = ref(false);
 const currentRoom = computed(() =>
   rooms.rooms.find((r) => r.roomId === rooms.currentRoomId)
 );
-const timeline = computed(() => {
-  // depend on rooms.bump so updates trigger when new events arrive
+const timeline = computed<MatrixEvent[]>(() => {
   rooms.bump;
-  return currentRoom.value ? currentRoom.value.timeline.slice() : [];
+  if (!currentRoom.value) return [];
+  return (currentRoom.value.timeline as MatrixEvent[]).filter((ev) => {
+    if (ev.getType() !== 'm.room.message') return false;
+    const msgtype = ev.getContent()?.msgtype;
+    return ['m.text', 'm.image', 'm.file'].includes(msgtype);
+  });
 });
 
 const isOwner = computed(
@@ -125,7 +130,7 @@ const isOwner = computed(
 );
 
 /* 发送文本 */
-async function handleSend(text) {
+async function handleSend(text: string) {
   try {
     await sendText(currentRoom.value.roomId, text);
     nextTick(scrollToBottom);
@@ -135,7 +140,7 @@ async function handleSend(text) {
 }
 
 /* 上传附件 */
-async function handleUpload(file) {
+async function handleUpload(file: File) {
   try {
     await ElMessageBox.confirm(
       `发送文件 ${file.name}?`,
@@ -230,7 +235,7 @@ onMounted(() => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .chat-app {
   height: 80vh;
 }

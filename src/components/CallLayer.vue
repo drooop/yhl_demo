@@ -21,17 +21,17 @@
   </el-dialog>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch, nextTick } from 'vue';
 import { Phone, Microphone, VideoCamera } from '@element-plus/icons-vue';
 import { ElMessageBox } from 'element-plus';
-import { useCallStore } from '../store/call';
-import { useSessionStore } from '../store/session';
+import { useCallStore } from '../stores/call';
+import { useSessionStore } from '../stores/session';
 
 const callStore = useCallStore();
 const session = useSessionStore();
 const visible = ref(false);
-const container = ref(null);
+const container = ref<HTMLElement | null>(null);
 
 watch(
   () => callStore.state,
@@ -50,7 +50,9 @@ watch(
         }
       }
       await nextTick();
-      callStore.start(container.value, session.userId);
+      if (container.value) {
+        callStore.start(container.value, session.userId);
+      }
     }
   }
 );
@@ -68,7 +70,7 @@ function hangup() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .jitsi-box {
   width: 100%;
   height: 500px;

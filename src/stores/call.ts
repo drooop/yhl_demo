@@ -1,26 +1,46 @@
 import { defineStore } from "pinia";
 
+interface JitsiAPI {
+  addEventListener(event: string, cb: () => void): void;
+  executeCommand(command: string): void;
+  dispose(): void;
+}
+
+interface CallState {
+  api: JitsiAPI | null;
+  state: "idle" | "pending" | "connected";
+  roomName: string;
+  callId: string;
+  incoming: boolean;
+  domain: string;
+}
+
 export const useCallStore = defineStore("call", {
-  state: () => ({
-    api: null, // JitsiMeetExternalAPI instance
-    state: "idle", // idle | pending | connected
+  state: (): CallState => ({
+    api: null,
+    state: "idle",
     roomName: "",
     callId: "",
     incoming: false,
     domain: "meeting.yhlcps.com",
   }),
   actions: {
-    prepare(roomName, incoming = false, callId = "", domain = "meeting.yhlcps.com") {
+    prepare(
+      roomName: string,
+      incoming = false,
+      callId = "",
+      domain = "meeting.yhlcps.com"
+    ) {
       this.roomName = roomName;
       this.callId = callId;
       this.incoming = incoming;
       this.domain = domain;
       this.state = "pending";
     },
-    start(parentNode, displayName) {
+    start(parentNode: HTMLElement, displayName: string) {
       if (!this.roomName) return;
       const domain = this.domain || "meeting.yhlcps.com";
-      this.api = new window.JitsiMeetExternalAPI(domain, {
+      this.api = new (window as any).JitsiMeetExternalAPI(domain, {
         roomName: this.roomName,
         parentNode,
         userInfo: { displayName },

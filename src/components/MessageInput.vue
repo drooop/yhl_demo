@@ -26,14 +26,12 @@
   </el-input>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { Paperclip, Position } from "@element-plus/icons-vue";
 
-const props = defineProps({
-  disabled: Boolean,
-});
-const emit = defineEmits(["send", "upload"]);
+const props = defineProps<{ disabled: boolean }>();
+const emit = defineEmits<{ (e: "send", text: string): void; (e: "upload", file: File): void }>();
 
 const draft = ref("");
 
@@ -43,21 +41,20 @@ function emitSend() {
   draft.value = "";
 }
 
-function onKey(e) {
+function onKey(e: KeyboardEvent) {
   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
     e.preventDefault();
     emitSend();
   }
 }
 
-/* 上传前钩子-直接把 file 对象交给父组件 */
-function beforeUpload(file) {
+function beforeUpload(file: File) {
   emit("upload", file);
-  return false; // 阻止 el-upload 自动提交
+  return false;
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 /* 让 textarea 与按钮在同一行 */
 :deep(.el-input__wrapper) {
   display: flex;

@@ -50,14 +50,14 @@
   </el-container>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { House, ChatDotRound, User, Bell } from '@element-plus/icons-vue'
 import TreeSidebar from '../components/TreeSidebar.vue'
 import ChatDrawer from '../components/ChatDrawer.vue'
-import { useSessionStore } from '../store/session'
-import { useRoomStore } from '../store/rooms'
+import { useSessionStore } from '../stores/session'
+import { useRoomStore } from '../stores/rooms'
 import { joinRoom, refreshRooms } from '../api/matrix'
 import { ElMessageBox } from 'element-plus'
 
@@ -121,7 +121,7 @@ async function acceptInvite(room) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .app-header {
   display: flex;
   align-items: center;
