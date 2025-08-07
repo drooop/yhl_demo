@@ -1,31 +1,33 @@
 <template>
-  <el-input
-    v-model="draft"
-    type="textarea"
-    :rows="2"
-    placeholder="发送消息 (Ctrl+Enter)"
-    :disabled="disabled"
-    @keydown="onKey"
-  >
-    <template #append>
+  <div class="message-input">
+    <el-input
+      v-model="draft"
+      type="textarea"
+      :autosize="{ minRows: 1, maxRows: 4 }"
+      placeholder="发送消息 (Ctrl+Enter)"
+      :disabled="disabled"
+      @keydown="onKey"
+    />
+    <div class="actions">
       <el-upload
         ref="uploadRef"
         :show-file-list="false"
         :disabled="disabled"
         :before-upload="beforeUpload"
       >
-        <el-button :icon="Plus" circle />
+        <el-button :icon="Plus" circle class="upload-btn" />
       </el-upload>
-
       <el-button
+        data-test="send"
+        class="send-btn"
         type="primary"
         :disabled="disabled || !draft.trim()"
         @click="emitSend"
       >
         发送
       </el-button>
-    </template>
-  </el-input>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -60,9 +62,23 @@ function beforeUpload(file: File) {
 </script>
 
 <style scoped lang="scss">
-/* 让 textarea 与按钮在同一行 */
-:deep(.el-input__wrapper) {
+.message-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.el-input {
+  flex: 1;
+}
+
+.actions {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.actions :deep(.el-button) {
+  height: 36px;
 }
 </style>
