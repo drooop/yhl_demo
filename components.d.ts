@@ -48,7 +48,4 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     TreeSidebar: typeof import('./src/components/TreeSidebar.vue')['default']
   }
-  export interface GlobalDirectives {
-    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
-  }
 }
