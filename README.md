@@ -1,9 +1,28 @@
-# Vue 3 + Vite
+# NiceGUI Matrix Chat
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+This project rewrites the former Vue based client using [NiceGUI](https://nicegui.io).
+A small Python backend handles Matrix communication via [matrix-nio](https://github.com/poljar/matrix-nio)
+and demonstrates NiceGUI's data binding features.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
-# yhl_demo
+## Running
 
-## Crypto WASM file
-Copy `node_modules/@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm` to `public/matrix_sdk_crypto_bg.wasm` before building. This file is required for end-to-end encryption and is ignored by git.
+```bash
+pip install -r requirements.txt
+python -m nicegui_app.main
+```
+
+Edit the constants at the top of `nicegui_app/main.py` with your Matrix homeserver,
+room id, username and password before running.
+
+## Packaging
+
+NiceGUI can produce native bundles for multiple platforms. Examples:
+
+```bash
+nicegui package nicegui_app/main.py --target windows
+nicegui package nicegui_app/main.py --target macos
+nicegui package nicegui_app/main.py --target android
+```
+
+The commands above create executables for Windows and macOS using PyInstaller and an APK for
+Android via Buildozer.
